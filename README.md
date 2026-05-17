@@ -52,7 +52,6 @@ FRONTEND_URL=http://localhost:3000
 3. Click **Generate new private key** and download the JSON file
 4. Rename it to `ekmarkServiceAccountKey.json` and place it in the root of the project
 
-> ⚠️ **Never commit this file to version control.** Make sure it is listed in your `.gitignore`.
 
 ### Run Locally
 
