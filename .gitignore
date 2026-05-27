@@ -7,10 +7,11 @@ __v0_jsx-dev-runtime.ts
 .vercel/
 
 # Environment variables
-.env*.local
+.env
+.env.*
 
 # Common ignores
 node_modules
 .next/
 .DS_Store
-src/config/ekmarkServiceAccountKey.json
+src/config/ekmarkServiceAccountKey.json.env
