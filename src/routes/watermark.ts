@@ -6,7 +6,9 @@ import crypto from "crypto"
 
 const router = express.Router()
 
-
+router.get("/", async (req, res, next) => {
+    return res.status(200).json({"success": true, "message": "Ekark watermarking backend is reachable"})
+})
 router.post("/", upload.array('images', 10), async (req, res, next) => {
     try {
         const files = req.files as Express.Multer.File[];
