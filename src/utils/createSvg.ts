@@ -39,9 +39,14 @@ export function createSvg(
     const usableWidth = maxWidth - padding * 2;
     const maxCharsPerLine = Math.max(1, Math.floor(usableWidth / avgCharWidth));
 
-    // ↓ this is the only new line — call the function to get your lines array
     const lines = wrapText(text, maxCharsPerLine);
 
+    // NEW: measure the actual longest line instead of trusting maxWidth
+    const longestLineChars = Math.max(...lines.map(l => l.length));
+    const textWidth = longestLineChars * avgCharWidth;
+
+    // NEW: canvas hugs the text, capped at maxWidth just in case
+    const svgWidth = Math.min(maxWidth, Math.ceil(textWidth + padding * 2));
     const svgHeight = lines.length * lineHeight + padding;
 
     const tspans = lines
@@ -49,7 +54,7 @@ export function createSvg(
         .join('\n');
 
     return `
-    <svg width="${maxWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
+    <svg width="${svgWidth}" height="${svgHeight}" xmlns="http://www.w3.org/2000/svg">
         <defs>
             <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
                 <feGaussianBlur in="SourceAlpha" stdDeviation="2" />

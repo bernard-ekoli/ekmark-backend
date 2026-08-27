@@ -1,13 +1,15 @@
 import express from "express";
 import upload from "../config/multer.js";
 import { createSvg } from "../utils/createSvg.js";
+import { watermarkGravity } from "../utils/calculateLocation.js";
 import sharp from "sharp";
 import crypto from "crypto"
+
 
 const router = express.Router()
 
 router.get("/", async (req, res, next) => {
-    return res.status(200).json({"success": true, "message": "Ekark watermarking backend is reachable"})
+    return res.status(200).json({ "success": true, "message": "Ekark watermarking backend is reachable" })
 })
 router.post("/", upload.array('images', 10), async (req, res, next) => {
     try {
@@ -22,6 +24,8 @@ router.post("/", upload.array('images', 10), async (req, res, next) => {
         if (req.body.text.length > 40) {
             return next(new Error("Watermark text must be less than 40 characters"))
         }
+
+        console.log("I recieved the requests ", req.body)
         const result = await Promise.all(files.map(async (file) => {
             const metadata = await sharp(file.buffer).metadata();
             if (!metadata.width) {
@@ -29,8 +33,9 @@ router.post("/", upload.array('images', 10), async (req, res, next) => {
             }
             const svgText = createSvg(metadata.width, req.body.text, Number(req.body.fontSize));
             const textBuffer = Buffer.from(svgText);
+            const gravityText = watermarkGravity(req.body.position)
             const watermarked = await sharp(file.buffer)
-                .composite([{ input: textBuffer, gravity: 'southeast' }])
+                .composite([{ input: textBuffer, gravity: gravityText }])
                 .png()
                 .toBuffer()
             const originalName = file.originalname.replace(/\.[^/.]+$/, '');
