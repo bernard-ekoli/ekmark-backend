@@ -1,8 +1,8 @@
 {
   "name": "ekmark-backend",
   "version": "1.0.0",
-  "description": "Watermark Your Images in Seconds",
-  "homepage": "https://github.com/bernard-ekoli/ekmark-backend#readme",
+  "description": "Free bulk image watermarking. Upload, watermark, done.",
+  "homepage": "https://ekmark.ekolix.com.ng",
   "bugs": {
     "url": "https://github.com/bernard-ekoli/ekmark-backend/issues"
   },
