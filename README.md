@@ -1,156 +1,78 @@
-# Ekmark Backend
+# Ekmark Watermark API
 
-The server-side API for [Ekmark](https://ekmark.ekolix.com.ng) — a free image watermarking tool. Handles waitlist registrations and stores them securely in Firebase Firestore.
+Use the Ekmark API to apply a text watermark to one or more images and receive
+the results as PNG data URLs.
 
----
+**Base URL:** `https://api.ekmark.ekolix.com.ng`
 
-## Tech Stack
+For the complete user guide, visit the
+[Ekmark API documentation](https://ekmark.ekolix.com.ng/documentation).
 
-- **Runtime** — Node.js
-- **Framework** — Express
-- **Language** — TypeScript
-- **Database** — Firebase Firestore (via Firebase Admin SDK)
-- **Validation** — Zod
-- **Rate Limiting** — express-rate-limit
-- **Package Manager** — npm
+## Check availability
 
----
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js v18+
-- npm
-- A Firebase project with Firestore enabled
-- A Firebase service account key (JSON)
-
-### Installation
+Send a `GET` request to `/api/watermark`:
 
 ```bash
-# Clone the repository
-git clone https://github.com/bernard-ekoli/ekmark-backend.git
-cd ekmark-backend
-
-# Install dependencies
-npm install
+curl https://api.ekmark.ekolix.com.ng/api/watermark
 ```
 
-### Environment Variables
+## Watermark images
 
-Create a `.env` file in the root of the project:
+Send a `POST` request to `/api/watermark` as `multipart/form-data`.
 
-```env
-PORT=5000
-FRONTEND_URL=http://localhost:3000
-```
+| Field | Required | Accepted values |
+| --- | --- | --- |
+| `images` | Yes | One or more image files, up to 10 files and 2 MiB per file |
+| `text` | Yes | Non-empty watermark text, up to 60 characters |
+| `fontSize` | Yes | A number from 10 to 120 |
+| `position` | Yes | `top-left`, `top-center`, `top-right`, `left`, `center`, `right`, `bottom-left`, `bottom-center`, or `bottom-right` |
 
-### Firebase Setup
-
-1. Go to [Firebase Console](https://console.firebase.google.com)
-2. Navigate to **Project Settings → Service Accounts**
-3. Click **Generate new private key** and download the JSON file
-4. Rename it to `ekmarkServiceAccountKey.json` and place it in the root of the project
-
-
-### Run Locally
+Example:
 
 ```bash
-npm run dev
+curl -X POST https://api.ekmark.ekolix.com.ng/api/watermark \
+  -F "images=@photo.jpg" \
+  -F "text=© Example" \
+  -F "fontSize=32" \
+  -F "position=bottom-right"
 ```
 
-Server will start on `http://localhost:5000`
+The requested font size scales with image width and is reduced as needed to fit
+the image dimensions. Results are PNGs regardless of the source image format.
 
----
+## Successful response
 
-## API Endpoints
+The response contains one result for each uploaded image:
 
-### `POST /api/waitlist`
-
-Validates and saves an email address to the Ekmark launch waitlist. Rate limited to **5 requests per IP per 15 minutes**.
-
-**Request Body**
 ```json
 {
-  "email": "user@example.com"
+  "images": [
+    {
+      "id": "generated-uuid",
+      "name": "photo.png",
+      "url": "data:image/png;base64,..."
+    }
+  ]
 }
 ```
 
-**Success Response** `201`
-```json
-{
-  "success": true,
-  "message": "Email saved successfully"
-}
-```
+Use each `url` as a data URL to display or save the processed PNG. The result
+name is based on the uploaded filename with a `.png` extension.
 
-**Validation Error** `400`
-```json
-{
-  "success": false,
-  "errors": [{ "message": "Invalid email" }]
-}
-```
+## Errors
 
-**Rate Limit Error** `429`
-```json
-{
-  "success": false,
-  "message": "Too many requests, please try again later"
-}
-```
+Errors are returned as JSON with a `success` value of `false` and a
+human-readable `message`.
 
-**Server Error** `500`
-```json
-{
-  "success": false,
-  "message": "Something went wrong on our end. Please try again later."
-}
-```
+| Status | Meaning |
+| --- | --- |
+| `400` | Missing or invalid fields, unsupported upload type, or too many images |
+| `413` | An image exceeds the 2 MiB per-file limit |
+| `500` | An image could not be processed or the service encountered an unexpected error |
 
----
+## Image handling
 
-## Project Structure
-
-```
-backend/
-├── src/
-│   ├── config/
-│   │   └── firebase.ts         # Firebase Admin SDK initialization
-│   ├── controllers/            # Route controllers
-│   ├── models/                 # Data models
-│   ├── routes/
-│   │   └── waitlist.ts         # POST /api/waitlist route
-│   └── utils/                  # Utility functions
-├── ekmarkServiceAccountKey.json  # Firebase credentials (gitignored)
-├── .env                        # Environment variables (gitignored)
-├── .gitignore
-├── package.json
-├── tsconfig.json
-└── README.md
-```
-
----
-
-## Deployment
-
-This backend is designed to be deployed on [Render](https://render.com).
-
-**Environment variables to set on Render:**
-- `PORT`
-- `FRONTEND_URL`
-
-
----
-
-## Security Notes
-
-- The service account key must never be committed to version control
-- Raw Firebase/Google error messages are never exposed to the client
-- CORS is configured to only allow requests from the frontend URL
-
----
-
-## License
-
-MIT © 2026 Bernard Edet Ekoli
+Uploads and generated results are processed in memory and are not saved as
+files by the API. Requests can process up to 10 images at once. The public
+service currently does not require API authentication; use it in accordance
+with the [Ekmark Terms of Service](https://ekmark.ekolix.com.ng/terms).

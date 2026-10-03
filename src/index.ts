@@ -2,7 +2,8 @@ import dotenv from "dotenv"
 dotenv.config()
 import express from "express"
 import cors from "cors"
-import type { Request, Response } from "express"
+import multer from "multer"
+import type { ErrorRequestHandler, Request, Response } from "express"
 import watermark from "./routes/watermark.js"
 
 const app = express()
@@ -21,14 +22,36 @@ app.get("/", (req: Request, res: Response): void => {
 app.use("/api/watermark", watermark)
 
 
-app.use((err: any, req: Request, res: Response, next: any) => {
-    console.error(err.stack); // Log the error for debugging
+const errorHandler: ErrorRequestHandler = (err, req, res, next) => {
+    if (res.headersSent) {
+        return next(err)
+    }
 
-    res.status(err.status || 500).json({
+    console.error(err instanceof Error ? err.stack : err)
+
+    let status = 500
+    if (err instanceof multer.MulterError) {
+        status = err.code === "LIMIT_FILE_SIZE" ? 413 : 400
+    } else if (
+        err instanceof Error &&
+        "status" in err &&
+        typeof err.status === "number" &&
+        err.status >= 400 &&
+        err.status < 500
+    ) {
+        status = err.status
+    }
+    const message = status === 500
+        ? "An unexpected server error occurred"
+        : err.message
+
+    return res.status(status).json({
         success: false,
-        message: err.message || 'Internal Server Error'
+        message
     });
-});
+}
+
+app.use(errorHandler)
 
 
 
